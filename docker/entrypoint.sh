@@ -1,6 +1,6 @@
 set -e
 
-./docker/wait-for-it.sh db
+cd /var/www/html
 
 if [ ! -d vendor ]; then
     composer install --no-interaction
@@ -10,7 +10,9 @@ if [ ! -f .env ]; then
     cp .env.example .env
 fi
 
-php artisan key:generate --no-interaction
+if ! grep -q "^APP_KEY=" .env || [ -z "$(grep '^APP_KEY=.\+' .env)" ]; then
+    php artisan key:generate --no-interaction
+fi
 
 php artisan migrate --force
 
