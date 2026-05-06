@@ -18,9 +18,29 @@ services:
     volumes:
       - ./api:/var/www/html
     depends_on:
-      - db
-    environment:
-      - PHP_EXTENSIONS=pdo_mysql
+      db:
+        condition: service_healthy
+
+  migrator:
+    image: php:8.4-cli
+    container_name: migrator
+    volumes:
+      - ./api:/var/www/html
+    depends_on:
+      db:
+        condition: service_healthy
+    command: bash -c "
+      cd /var/www/html &&
+      apt-get update && apt-get install -y git unzip zip &&
+      docker-php-ext-install pdo_mysql &&
+      php -r \"copy('https://getcomposer.org/installer', 'composer-setup.php');\" &&
+      php composer-setup.php --quiet && php -r \"unlink('composer-setup.php');\" &&
+      mv composer.phar /usr/local/bin/composer &&
+      composer install --no-interaction &&
+      cp -n .env.example .env &&
+      php artisan key:generate --no-interaction &&
+      php artisan migrate --force &&
+      echo '✅ All migrations completed'"
 
   db:
     image: mysql:9.6.0
@@ -31,6 +51,10 @@ services:
       MYSQL_ROOT_PASSWORD: root
     volumes:
       - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      retries: 10
 
 volumes:
   db_data:
