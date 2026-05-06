@@ -18,17 +18,13 @@ services:
     volumes:
       - ./api:/var/www/html
     depends_on:
-      db:
-        condition: service_healthy
+      - db
 
   migrator:
     image: php:8.4-cli
     container_name: migrator
     volumes:
       - ./api:/var/www/html
-    depends_on:
-      db:
-        condition: service_healthy
     command: bash -c "
       cd /var/www/html &&
       apt-get update && apt-get install -y git unzip zip &&
@@ -39,9 +35,8 @@ services:
       composer install --no-interaction &&
       cp -n .env.example .env &&
       php artisan key:generate --no-interaction &&
-      sleep 5 &&
       php artisan migrate --force &&
-      echo ' All migrations completed'"
+      echo 'Done'"
 
   db:
     image: mysql:9.6.0
@@ -52,10 +47,6 @@ services:
       MYSQL_ROOT_PASSWORD: root
     volumes:
       - db_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 5s
-      retries: 10
 
 volumes:
   db_data:
