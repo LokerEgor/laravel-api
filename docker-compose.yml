@@ -39,8 +39,9 @@ services:
       composer install --no-interaction &&
       cp -n .env.example .env &&
       php artisan key:generate --no-interaction &&
+      sleep 5 &&
       php artisan migrate --force &&
-      echo '✅ All migrations completed'"
+      echo ' All migrations completed'"
 
   db:
     image: mysql:9.6.0
